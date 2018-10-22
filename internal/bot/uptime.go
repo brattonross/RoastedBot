@@ -12,7 +12,7 @@ import (
 type Uptime struct{}
 
 // Execute the command.
-func (u Uptime) Execute(b *Bot, args []string, channel string, user twitch.User, m twitch.Message) {
+func (u Uptime) Execute(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) {
 	uptime := time.Since(b.start)
 	resp := fmt.Sprintf(
 		"%s has been running for %d hours, %d minutes, and %d seconds",
@@ -32,7 +32,7 @@ func (u Uptime) Execute(b *Bot, args []string, channel string, user twitch.User,
 			int(uptime.Seconds())%60,
 		)
 	}
-	b.Say(message{channel, resp})
+	b.Say(Message{channel, resp})
 }
 
 // Match determines if the message should trigger the command.

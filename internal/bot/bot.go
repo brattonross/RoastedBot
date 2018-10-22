@@ -23,7 +23,7 @@ type Command interface {
 }
 
 // Message represents a message that the bot sends.
-type message struct {
+type Message struct {
 	Channel string
 	Text    string
 }
@@ -34,7 +34,7 @@ type Bot struct {
 	start  time.Time
 	client *twitch.Client
 
-	out chan message
+	out chan Message
 
 	Commands []Command
 }
@@ -44,7 +44,7 @@ func New(config Config) *Bot {
 	return &Bot{
 		config: config,
 		client: twitch.NewClient(config.Username, config.OAuth),
-		out:    make(chan message),
+		out:    make(chan Message),
 		start:  time.Now(),
 	}
 }
@@ -91,18 +91,18 @@ func (b *Bot) JoinChannel(channel string) {
 }
 
 // Say sends a message to the Bot's out channel.
-func (b *Bot) Say(m message) {
+func (b *Bot) Say(m Message) {
 	b.out <- m
 }
 
 func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.Message) {
-	return func(channel string, user twitch.User, m twitch.Message) {
+	return func(channel string, user twitch.User, message twitch.Message) {
 		username := strings.ToLower(b.config.Username)
 		if strings.ToLower(user.Username) == username {
 			return
 		}
 
-		args := strings.Split(m.Text, " ")
+		args := strings.Split(message.Text, " ")
 		if len(args) < 1 {
 			return
 		}
@@ -111,20 +111,20 @@ func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.
 		last := strings.ToLower(args[len(args)-1])
 
 		if first == "!xd" {
-			log.WithFields(log.Fields{"channel": channel}).Info("sending xD message")
-			b.Say(message{channel, "xD"})
+			log.WithFields(log.Fields{"channel": channel}).Info("sending xD Message")
+			b.Say(Message{channel, "xD"})
 			return
 		} else if first == "!bot" {
-			log.WithFields(log.Fields{"channel": channel}).Info("sending bot message")
-			b.Say(message{channel, "I'm roastedb's bot, written in Go pajaH"})
+			log.WithFields(log.Fields{"channel": channel}).Info("sending bot Message")
+			b.Say(Message{channel, "I'm roastedb's bot, written in Go pajaH"})
 			return
 		} else if first == "!php" {
-			log.WithFields(log.Fields{"channel": channel}).Info("sending php message")
-			b.Say(message{channel, "PHPDETECTED"})
+			log.WithFields(log.Fields{"channel": channel}).Info("sending php Message")
+			b.Say(Message{channel, "PHPDETECTED"})
 			return
 		}
 
-		// No mentions, or the only thing in the message is a mention, don't process
+		// No mentions, or the only thing in the Message is a mention, don't process
 		if (!isMention(first, b.config.Username) && !isMention(last, b.config.Username)) || len(args) < 2 {
 			return
 		}
@@ -135,13 +135,13 @@ func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.
 			args = args[:len(args)-1]
 		}
 
-		log.WithFields(log.Fields{"text": m.Text}).Info("handling message")
+		log.WithFields(log.Fields{"text": message.Text}).Info("handling Message")
 		for _, c := range b.Commands {
 			if !c.Match(args) {
 				continue
 			}
 
-			go c.Execute(b, args, channel, user, m)
+			go c.Execute(b, args, channel, user, message)
 			break
 		}
 	}
