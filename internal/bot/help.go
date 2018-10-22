@@ -11,7 +11,7 @@ import (
 type Help struct{}
 
 // Execute the command.
-func (h Help) Execute(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) (string, error) {
+func (h Help) Execute(b *Bot, args []string, channel string, user twitch.User, m twitch.Message) {
 	names := []string{}
 	for _, c := range b.Commands {
 		if c.Name() == "help" {
@@ -19,7 +19,10 @@ func (h Help) Execute(b *Bot, args []string, channel string, user twitch.User, m
 		}
 		names = append(names, c.Name())
 	}
-	return fmt.Sprintf("%s, to use my commands, mention me at the start or end of your message. Available commands are: %s", user.DisplayName, strings.Join(names, ", ")), nil
+	b.Say(message{
+		channel,
+		fmt.Sprintf("%s, to use my commands, mention me at the start or end of your message. Available commands are: %s", user.DisplayName, strings.Join(names, ", ")),
+	})
 }
 
 // Match determines if the message should trigger the command.

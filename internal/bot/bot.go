@@ -17,9 +17,15 @@ type Config struct {
 
 // Command is a command.
 type Command interface {
-	Execute(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) (string, error)
+	Execute(b *Bot, args []string, channel string, user twitch.User, message twitch.Message)
 	Match(s []string) bool
 	Name() string
+}
+
+// Message represents a message that the bot sends.
+type message struct {
+	Channel string
+	Text    string
 }
 
 // Bot is the bot xD
@@ -27,6 +33,8 @@ type Bot struct {
 	config Config
 	start  time.Time
 	client *twitch.Client
+
+	out chan message
 
 	Commands []Command
 }
@@ -36,6 +44,7 @@ func New(config Config) *Bot {
 	return &Bot{
 		config: config,
 		client: twitch.NewClient(config.Username, config.OAuth),
+		out:    make(chan message),
 		start:  time.Now(),
 	}
 }
@@ -60,6 +69,16 @@ func (b *Bot) Init() {
 	})
 	b.client.OnNewMessage(onNewMessage(b))
 
+	go func(b *Bot) {
+		for {
+			select {
+			case msg := <-b.out:
+				b.client.Say(msg.Channel, msg.Text)
+			default:
+			}
+		}
+	}(b)
+
 	for _, channel := range b.config.Channels {
 		b.JoinChannel(channel)
 		log.WithFields(log.Fields{"channel": channel}).Info("joined channel")
@@ -71,14 +90,19 @@ func (b *Bot) JoinChannel(channel string) {
 	b.client.Join(channel)
 }
 
+// Say sends a message to the Bot's out channel.
+func (b *Bot) Say(m message) {
+	b.out <- m
+}
+
 func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.Message) {
-	return func(channel string, user twitch.User, message twitch.Message) {
+	return func(channel string, user twitch.User, m twitch.Message) {
 		username := strings.ToLower(b.config.Username)
 		if strings.ToLower(user.Username) == username {
 			return
 		}
 
-		args := strings.Split(message.Text, " ")
+		args := strings.Split(m.Text, " ")
 		if len(args) < 1 {
 			return
 		}
@@ -87,22 +111,16 @@ func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.
 		last := strings.ToLower(args[len(args)-1])
 
 		if first == "!xd" {
-			log.WithFields(log.Fields{
-				"channel": channel,
-			}).Info("sending xD message")
-			b.client.Say(channel, "xD")
+			log.WithFields(log.Fields{"channel": channel}).Info("sending xD message")
+			b.Say(message{channel, "xD"})
 			return
 		} else if first == "!bot" {
-			log.WithFields(log.Fields{
-				"channel": channel,
-			}).Info("sending bot message")
-			b.client.Say(channel, "I'm roastedb's bot, written in Go pajaH")
+			log.WithFields(log.Fields{"channel": channel}).Info("sending bot message")
+			b.Say(message{channel, "I'm roastedb's bot, written in Go pajaH"})
 			return
 		} else if first == "!php" {
-			log.WithFields(log.Fields{
-				"channel": channel,
-			}).Info("sending php message")
-			b.client.Say(channel, "PHPDETECTED")
+			log.WithFields(log.Fields{"channel": channel}).Info("sending php message")
+			b.Say(message{channel, "PHPDETECTED"})
 			return
 		}
 
@@ -117,24 +135,13 @@ func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.
 			args = args[:len(args)-1]
 		}
 
-		log.WithFields(log.Fields{
-			"text": message.Text,
-		}).Info("handling message")
+		log.WithFields(log.Fields{"text": m.Text}).Info("handling message")
 		for _, c := range b.Commands {
 			if !c.Match(args) {
 				continue
 			}
 
-			resp, err := c.Execute(b, args, channel, user, message)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"command": c.Name(),
-					"error":   err,
-				}).Error("error occurred while executing command")
-				break
-			}
-
-			b.client.Say(channel, resp)
+			go c.Execute(b, args, channel, user, m)
 			break
 		}
 	}
