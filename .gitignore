@@ -16,3 +16,4 @@ config.json
 
 # VSCode stuff
 .vscode
+debug

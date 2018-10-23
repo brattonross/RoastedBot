@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -124,8 +125,14 @@ func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.
 			return
 		}
 
-		// No mentions, or the only thing in the Message is a mention, don't process
-		if (!isMention(first, b.config.Username) && !isMention(last, b.config.Username)) || len(args) < 2 {
+		// No mentions, don't process
+		if !isMention(first, b.config.Username) && !isMention(last, b.config.Username) {
+			return
+		}
+
+		// Only message is a mention of the bot, say hi
+		if len(args) == 1 {
+			b.Say(Message{channel, fmt.Sprintf("hi %s :)", user.DisplayName)})
 			return
 		}
 
