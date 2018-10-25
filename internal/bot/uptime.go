@@ -2,14 +2,15 @@ package bot
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	twitch "github.com/gempir/go-twitch-irc"
 )
 
 // Uptime command.
-type Uptime struct{}
+type Uptime struct {
+	*command
+}
 
 // Execute the command.
 func (u Uptime) Execute(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) {
@@ -32,18 +33,5 @@ func (u Uptime) Execute(b *Bot, args []string, channel string, user twitch.User,
 			int(uptime.Seconds())%60,
 		)
 	}
-	b.Say(Message{channel, resp})
-}
-
-// Match determines if the message should trigger the command.
-func (u Uptime) Match(s []string) bool {
-	if len(s) < 1 {
-		return false
-	}
-	return strings.ToLower(s[0]) == "uptime"
-}
-
-// Name of the command.
-func (u Uptime) Name() string {
-	return "uptime"
+	b.Say(channel, resp)
 }
