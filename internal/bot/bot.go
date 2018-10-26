@@ -46,15 +46,76 @@ func New(config Config) *Bot {
 // AddCommand adds a command to the module with the given name.
 // If the module does not exist, it is created.
 func (b *Bot) AddCommand(module string, c Command) {
-	if _, ok := b.Modules[module]; !ok {
+	m, ok := b.Modules[module]
+	if !ok {
 		b.Modules[module] = &Module{Name: module}
 	}
-	b.Modules[module].AddCommand(c)
+	m.AddCommand(c)
 }
 
 // Connect will connect the bot to Twitch IRC.
 func (b *Bot) Connect() error {
 	return b.client.Connect()
+}
+
+// EnableCommand enables a command.
+func (b *Bot) EnableCommand(module, command string) error {
+	module = strings.ToLower(module)
+	command = strings.ToLower(command)
+
+	m, ok := b.Modules[module]
+	if !ok {
+		return fmt.Errorf("module with name '%s' does not exist", module)
+	}
+	for _, c := range m.Commands {
+		if c.Name() == command {
+			c.Enable()
+			return nil
+		}
+	}
+	return fmt.Errorf("command with name '%s' does not exist in module '%s'", command, module)
+}
+
+// EnableModule enables a module.
+func (b *Bot) EnableModule(module string) error {
+	module = strings.ToLower(module)
+
+	m, ok := b.Modules[module]
+	if !ok {
+		return fmt.Errorf("module with name '%s' does not exist", module)
+	}
+	m.Enabled = true
+	return nil
+}
+
+// DisableCommand disables a command.
+func (b *Bot) DisableCommand(module, command string) error {
+	module = strings.ToLower(module)
+	command = strings.ToLower(command)
+
+	m, ok := b.Modules[module]
+	if !ok {
+		return fmt.Errorf("module with name '%s' does not exist", module)
+	}
+	for _, c := range m.Commands {
+		if c.Name() == command {
+			c.Disable()
+			return nil
+		}
+	}
+	return fmt.Errorf("command with name '%s' does not exist in module '%s'", command, module)
+}
+
+// DisableModule disables a module.
+func (b *Bot) DisableModule(module string) error {
+	module = strings.ToLower(module)
+
+	m, ok := b.Modules[module]
+	if !ok {
+		return fmt.Errorf("module with name '%s' does not exist", module)
+	}
+	m.Enabled = false
+	return nil
 }
 
 // Init will initialize the bot with sensible defaults.
