@@ -120,8 +120,8 @@ func (b *Bot) DisableModule(module string) error {
 
 // Init will initialize the bot with sensible defaults.
 func (b *Bot) Init() {
-	b.AddCommand(defaultModule, Help{&command{Cooldown: time.Second * 5, enabled: true, name: "help"}})
-	b.AddCommand(defaultModule, Uptime{&command{Cooldown: time.Second * 5, enabled: true, name: "uptime"}})
+	b.AddCommand(defaultModule, Help{&command{cooldown: time.Second * 5, enabled: true, name: "help"}})
+	b.AddCommand(defaultModule, Uptime{&command{cooldown: time.Second * 5, enabled: true, name: "uptime"}})
 
 	b.client.OnConnect(func() {
 		log.Info("successfully connected to twitch!")

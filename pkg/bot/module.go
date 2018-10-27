@@ -23,6 +23,8 @@ func (m *Module) AddCommand(c Command) {
 
 // Command is a command that a bot can use.
 type Command interface {
+	// Cooldown of the command.
+	Cooldown() time.Duration
 	// Enables the command.
 	Enable()
 	// Determines if the command is currently enabled.
@@ -43,9 +45,13 @@ type Command interface {
 
 type command struct {
 	enabled  bool
-	Cooldown time.Duration
-	LastUsed time.Time
+	cooldown time.Duration
+	lastUsed time.Time
 	name     string
+}
+
+func (c *command) Cooldown() time.Duration {
+	return c.cooldown
 }
 
 func (c *command) Enable() {
@@ -61,7 +67,7 @@ func (c *command) Disable() {
 }
 
 func (c command) IsOnCooldown() bool {
-	return time.Now().Add(-c.Cooldown).Before(c.LastUsed)
+	return time.Now().Add(-c.cooldown).Before(c.lastUsed)
 }
 
 func (c command) Match(s []string) bool {
@@ -77,5 +83,5 @@ func (c command) Name() string {
 }
 
 func (c *command) SetLastUsed() {
-	c.LastUsed = time.Now()
+	c.lastUsed = time.Now()
 }
