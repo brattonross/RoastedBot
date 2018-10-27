@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/brattonross/roastedbot/pkg/bot/service"
 	"github.com/gempir/go-twitch-irc"
 	log "github.com/sirupsen/logrus"
 )
@@ -24,9 +25,10 @@ type Message struct {
 
 // Bot is the bot xD
 type Bot struct {
-	config Config
-	start  time.Time
-	client *twitch.Client
+	config  Config
+	start   time.Time
+	client  *twitch.Client
+	service service.BotServiceServer
 
 	say chan Message
 

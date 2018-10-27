@@ -5,7 +5,7 @@ import (
 	"flag"
 	"io/ioutil"
 
-	bi "github.com/brattonross/roastedbot/internal/bot"
+	bi "github.com/brattonross/roastedbot/pkg/bot"
 	log "github.com/sirupsen/logrus"
 )
 

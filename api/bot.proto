@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package service;
+
+message Command {
+    string name = 1;
+    bool enabled = 2;
+    string cooldown = 3;
+}
+
+message Module {
+    string name = 1;
+    bool enabled = 2;
+    repeated Command commands = 3;
+}
+
+message ModulesRequest {}
+
+message ModulesResponse {
+    map<string, Module> modules = 1;
+}
+
+service BotService {
+    rpc Modules (ModulesRequest) returns (ModulesResponse);
+}
