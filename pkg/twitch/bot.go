@@ -1,4 +1,4 @@
-package bot
+package twitch
 
 import (
 	"fmt"
@@ -16,12 +16,6 @@ type Config struct {
 	Channels []string `json:"channels"`
 }
 
-// Message represents a message that the bot sends.
-type Message struct {
-	Channel string
-	Text    string
-}
-
 // Bot is the bot xD
 type Bot struct {
 	config Config
@@ -30,27 +24,30 @@ type Bot struct {
 
 	say chan Message
 
-	Modules map[string]*Module
+	Channels map[string]*Channel
 }
 
-// New creates a new Bot using the given Config.
-func New(config Config) *Bot {
+// NewBot creates a new Bot using the given Config.
+func NewBot(config Config) *Bot {
 	return &Bot{
-		config: config,
-		client: twitch.NewClient(config.Username, config.OAuth),
-		say:    make(chan Message),
-		start:  time.Now(),
+		Channels: map[string]*Channel{},
+		config:   config,
+		client:   twitch.NewClient(config.Username, config.OAuth),
+		say:      make(chan Message),
+		start:    time.Now(),
 	}
 }
 
-// AddCommand adds a command to the module with the given name.
-// If the module does not exist, it is created.
-func (b *Bot) AddCommand(module string, c Command) {
-	m, ok := b.Modules[module]
+// AddCommand adds a command to the module in the channel.
+// If the bot is not currently connected to the channel it will return an error.
+// If the module does not already exist, it will be created.
+func (b *Bot) AddCommand(channel, module string, c Command) error {
+	ch, ok := b.Channels[channel]
 	if !ok {
-		b.Modules[module] = &Module{Name: module}
+		return fmt.Errorf("bot is not connected to channel '%s'", channel)
 	}
-	m.AddCommand(c)
+	ch.AddCommand(module, c)
+	return nil
 }
 
 // Connect will connect the bot to Twitch IRC.
@@ -58,71 +55,45 @@ func (b *Bot) Connect() error {
 	return b.client.Connect()
 }
 
-// EnableCommand enables a command.
-func (b *Bot) EnableCommand(module, command string) error {
-	module = strings.ToLower(module)
-	command = strings.ToLower(command)
-
-	m, ok := b.Modules[module]
+// EnableCommand enables a command in the given channel and module.
+// The bot must be connected to the given channel, and the command must exist within the module.
+func (b *Bot) EnableCommand(channel, module, command string) error {
+	ch, ok := b.Channels[channel]
 	if !ok {
-		return fmt.Errorf("module with name '%s' does not exist", module)
+		return fmt.Errorf("bot is not connected to channel '%s'", channel)
 	}
-	for _, c := range m.Commands {
-		if c.Name() == command {
-			c.Enable()
-			return nil
-		}
-	}
-	return fmt.Errorf("command with name '%s' does not exist in module '%s'", command, module)
+	return ch.EnableCommand(module, command)
 }
 
-// EnableModule enables a module.
-func (b *Bot) EnableModule(module string) error {
-	module = strings.ToLower(module)
-
-	m, ok := b.Modules[module]
+// EnableModule enables a module in the given channel.
+func (b *Bot) EnableModule(channel, module string) error {
+	ch, ok := b.Channels[channel]
 	if !ok {
-		return fmt.Errorf("module with name '%s' does not exist", module)
+		return fmt.Errorf("bot is not connected to channel '%s'", channel)
 	}
-	m.Enabled = true
-	return nil
+	return ch.EnableModule(module)
 }
 
-// DisableCommand disables a command.
-func (b *Bot) DisableCommand(module, command string) error {
-	module = strings.ToLower(module)
-	command = strings.ToLower(command)
-
-	m, ok := b.Modules[module]
+// DisableCommand disables a command in the given channel and module.
+func (b *Bot) DisableCommand(channel, module, command string) error {
+	ch, ok := b.Channels[channel]
 	if !ok {
-		return fmt.Errorf("module with name '%s' does not exist", module)
+		return fmt.Errorf("bot is not connected to channel '%s'", channel)
 	}
-	for _, c := range m.Commands {
-		if c.Name() == command {
-			c.Disable()
-			return nil
-		}
-	}
-	return fmt.Errorf("command with name '%s' does not exist in module '%s'", command, module)
+	return ch.DisableCommand(module, command)
 }
 
-// DisableModule disables a module.
-func (b *Bot) DisableModule(module string) error {
-	module = strings.ToLower(module)
-
-	m, ok := b.Modules[module]
+// DisableModule disables a module in a channel.
+func (b *Bot) DisableModule(channel, module string) error {
+	ch, ok := b.Channels[channel]
 	if !ok {
-		return fmt.Errorf("module with name '%s' does not exist", module)
+		return fmt.Errorf("bot is not connected to channel '%s'", channel)
 	}
-	m.Enabled = false
-	return nil
+	return ch.DisableModule(module)
 }
 
 // Init will initialize the bot with sensible defaults.
 func (b *Bot) Init() {
-	b.AddCommand(defaultModule, Help{&command{cooldown: time.Second * 5, enabled: true, name: "help"}})
-	b.AddCommand(defaultModule, Uptime{&command{cooldown: time.Second * 5, enabled: true, name: "uptime"}})
-
 	b.client.OnConnect(func() {
 		log.Info("successfully connected to twitch!")
 	})
@@ -144,9 +115,17 @@ func (b *Bot) Init() {
 	}
 }
 
-// JoinChannel joins the given channel.
-func (b *Bot) JoinChannel(channel string) {
+// JoinChannel joins the given channel, and initialises the default modules for the channel.
+func (b *Bot) JoinChannel(channel string) error {
+	if _, ok := b.Channels[channel]; ok {
+		return fmt.Errorf("bot is already connected to channel '%s'", channel)
+	}
+	b.Channels[channel] = newChannel(channel)
+	if err := b.Channels[channel].initDefaultModules(); err != nil {
+		log.WithField("channel", channel).Warnf("failed to initialise default modules for channel: %v", err)
+	}
 	b.client.Join(channel)
+	return nil
 }
 
 // Say sends a message to the Bot's say channel.
@@ -158,6 +137,12 @@ func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.
 	return func(channel string, user twitch.User, message twitch.Message) {
 		username := strings.ToLower(b.config.Username)
 		if strings.ToLower(user.Username) == username {
+			return
+		}
+
+		ch, ok := b.Channels[channel]
+		if !ok {
+			log.WithField("channel", channel).Error("cannot handle message: bot is not connected to channel")
 			return
 		}
 
@@ -201,13 +186,12 @@ func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.
 		}
 
 		log.WithField("text", message.Text).Info("handling message")
-		for _, m := range b.Modules {
+		for _, m := range ch.Modules {
 			for _, c := range m.Commands {
-				if !c.Match(args) {
+				if !c.Match(args[0]) {
 					continue
 				}
 
-				log.WithField("command", c.Name()).Info("matched command")
 				if !c.Enabled() {
 					log.WithField("command", c.Name()).Info("command is not enabled")
 					return
@@ -223,7 +207,7 @@ func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.
 					start := time.Now()
 					defer log.WithFields(log.Fields{
 						"command": c.Name(),
-						"time":    time.Now().Sub(start),
+						"time":    fmt.Sprintf("%dms", time.Now().Sub(start)/time.Millisecond),
 					}).Info("finished executing command")
 					command.Execute(b, args, channel, user, message)
 					command.SetLastUsed()

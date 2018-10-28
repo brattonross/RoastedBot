@@ -5,7 +5,7 @@ import (
 	"flag"
 	"io/ioutil"
 
-	bi "github.com/brattonross/roastedbot/pkg/bot"
+	"github.com/brattonross/roastedbot/pkg/twitch"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -24,7 +24,7 @@ func main() {
 		}).Fatal("failed to read configuration file")
 	}
 
-	config := bi.Config{}
+	config := twitch.Config{}
 	err = json.Unmarshal(b, &config)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -33,7 +33,7 @@ func main() {
 	}
 	log.Info("successfully read config")
 
-	bot := bi.New(config)
+	bot := twitch.NewBot(config)
 	bot.Init()
 
 	err = bot.Connect()

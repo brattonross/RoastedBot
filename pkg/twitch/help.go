@@ -1,9 +1,9 @@
-package bot
+package twitch
 
 import (
 	"fmt"
 
-	"github.com/gempir/go-twitch-irc"
+	twitch "github.com/gempir/go-twitch-irc"
 )
 
 // Help command.

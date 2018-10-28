@@ -1,4 +1,4 @@
-package bot
+package twitch
 
 import (
 	"fmt"
@@ -58,7 +58,7 @@ func (e Enable) Execute(b *Bot, args []string, channel string, user twitch.User,
 	// No command specified - enable/disable module.
 	if command == "" {
 		if enable {
-			if err := b.EnableModule(module); err != nil {
+			if err := b.EnableModule(channel, module); err != nil {
 				log.WithField("module", module).Error(err)
 				b.Say(channel, fmt.Sprintf("Module '%s' does not exist", module))
 				return
@@ -66,7 +66,7 @@ func (e Enable) Execute(b *Bot, args []string, channel string, user twitch.User,
 			b.Say(channel, fmt.Sprintf("Enabled module '%s'", module))
 			return
 		}
-		if err := b.DisableModule(module); err != nil {
+		if err := b.DisableModule(channel, module); err != nil {
 			log.WithField("module", module).Error(err)
 			b.Say(channel, fmt.Sprintf("Module '%s' does not exist", module))
 			return
@@ -77,7 +77,7 @@ func (e Enable) Execute(b *Bot, args []string, channel string, user twitch.User,
 
 	// Command specified - enable/disable command.
 	if enable {
-		if err := b.EnableCommand(module, command); err != nil {
+		if err := b.EnableCommand(channel, module, command); err != nil {
 			log.WithFields(log.Fields{
 				module:  module,
 				command: command,
@@ -88,7 +88,7 @@ func (e Enable) Execute(b *Bot, args []string, channel string, user twitch.User,
 		b.Say(channel, fmt.Sprintf("Enabled command '%s' in module '%s'", command, module))
 		return
 	}
-	if err := b.DisableCommand(module, command); err != nil {
+	if err := b.DisableCommand(channel, module, command); err != nil {
 		log.WithFields(log.Fields{
 			module:  module,
 			command: command,

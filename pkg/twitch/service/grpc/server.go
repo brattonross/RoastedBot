@@ -1,24 +1,24 @@
 package grpc
 
 import (
-	"github.com/brattonross/roastedbot/pkg/bot"
+	"github.com/brattonross/roastedbot/pkg/twitch"
 	context "golang.org/x/net/context"
 )
 
-// Service is the bot service.
+// Service is the twitch service.
 type Service struct {
-	modules map[string]*bot.Module
+	bot *twitch.Bot
 }
 
 // New creates a new service.
-func New(modules map[string]*bot.Module) *Service {
-	return &Service{modules}
+func newGrpcService(b *twitch.Bot) *Service {
+	return &Service{b}
 }
 
 // Modules should return a list of all modules.
 func (s *Service) Modules(ctx context.Context, req *ModulesRequest) (*ModulesResponse, error) {
 	mods := map[string]*Module{}
-	for _, m := range s.modules {
+	for _, m := range s.bot.Modules {
 		mods[m.Name] = &Module{
 			Name:     m.Name,
 			Enabled:  m.Enabled,
