@@ -15,8 +15,9 @@ type Message struct {
 
 // Channel represents a twitch channel.
 type Channel struct {
-	Modules map[string]*Module
-	Name    string
+	EnabledModules map[string]bool
+	Modules        map[string]*Module
+	Name           string
 }
 
 // AddCommand adds a command to the given module.
@@ -48,11 +49,10 @@ func (ch *Channel) EnableCommand(module, command string) error {
 
 // EnableModule enables a module in the channel.
 func (ch *Channel) EnableModule(module string) error {
-	m, ok := ch.Modules[module]
-	if !ok {
+	if _, ok := ch.Modules[module]; !ok {
 		return fmt.Errorf("module with name '%s' does not exist in channel '%s'", module, ch.Name)
 	}
-	m.Enabled = true
+	ch.EnabledModules[module] = true
 	return nil
 }
 
@@ -67,11 +67,10 @@ func (ch *Channel) DisableCommand(module, command string) error {
 
 // DisableModule disables a module in the channel.
 func (ch *Channel) DisableModule(module string) error {
-	m, ok := ch.Modules[module]
-	if !ok {
+	if _, ok := ch.Modules[module]; !ok {
 		return fmt.Errorf("module with name '%s' does not exist in channel '%s'", module, ch.Name)
 	}
-	m.Enabled = false
+	ch.EnabledModules[module] = false
 	return nil
 }
 
@@ -90,6 +89,6 @@ func (ch *Channel) initDefaultModules() error {
 	}
 	m.AddCommand(Help{&command{cooldown: time.Second * 5, enabled: true, name: "help"}})
 	m.AddCommand(Uptime{&command{cooldown: time.Second * 5, enabled: true, name: "uptime"}})
-	m.Enabled = true
+	ch.EnabledModules[defaultModule] = true
 	return nil
 }

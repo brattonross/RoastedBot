@@ -12,7 +12,6 @@ const defaultModule = "default"
 // Module is a named collection of Commands.
 type Module struct {
 	Commands map[string]Command
-	Enabled  bool
 	Name     string
 }
 

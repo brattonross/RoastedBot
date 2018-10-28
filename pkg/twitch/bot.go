@@ -187,6 +187,11 @@ func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.
 
 		log.WithField("text", message.Text).Info("handling message")
 		for _, m := range ch.Modules {
+			enabled, ok := ch.EnabledModules[m.Name]
+			if !ok || !enabled {
+				continue
+			}
+
 			for _, c := range m.Commands {
 				if !c.Match(args[0]) {
 					continue
