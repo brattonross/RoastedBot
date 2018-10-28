@@ -76,8 +76,9 @@ func (ch *Channel) DisableModule(module string) error {
 
 func newChannel(name string) *Channel {
 	return &Channel{
-		Modules: map[string]*Module{},
-		Name:    name,
+		EnabledModules: map[string]bool{},
+		Modules:        map[string]*Module{},
+		Name:           name,
 	}
 }
 
