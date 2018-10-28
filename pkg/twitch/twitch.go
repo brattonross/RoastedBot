@@ -24,7 +24,7 @@ type Channel struct {
 // If the module does not exist, it will be created.
 func (ch *Channel) AddCommand(module string, c Command) error {
 	if _, ok := ch.Modules[module]; !ok {
-		ch.Modules[module] = &Module{Name: module}
+		ch.Modules[module] = newModule(module)
 	}
 	return ch.Modules[module].AddCommand(c)
 }
@@ -34,7 +34,7 @@ func (ch *Channel) AddModule(name string) (*Module, error) {
 	if _, ok := ch.Modules[name]; ok {
 		return nil, fmt.Errorf("module '%s' already exists in channel '%s'", name, ch.Name)
 	}
-	ch.Modules[name] = &Module{Name: name, Commands: map[string]Command{}}
+	ch.Modules[name] = newModule(name)
 	return ch.Modules[name], nil
 }
 

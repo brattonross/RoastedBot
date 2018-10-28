@@ -197,7 +197,8 @@ func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.
 					continue
 				}
 
-				if !c.Enabled() {
+				enabled, ok := m.EnabledCommands[c.Name()]
+				if !ok || !enabled {
 					log.WithField("command", c.Name()).Info("command is not enabled")
 					return
 				}

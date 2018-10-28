@@ -11,8 +11,17 @@ const defaultModule = "default"
 
 // Module is a named collection of Commands.
 type Module struct {
-	Commands map[string]Command
-	Name     string
+	Commands        map[string]Command
+	EnabledCommands map[string]bool
+	Name            string
+}
+
+func newModule(name string) *Module {
+	return &Module{
+		Commands:        map[string]Command{},
+		EnabledCommands: map[string]bool{},
+		Name:            name,
+	}
 }
 
 // AddCommand adds a command to the module.
@@ -28,7 +37,7 @@ func (m *Module) AddCommand(c Command) error {
 func (m *Module) EnableCommand(command string) error {
 	for _, c := range m.Commands {
 		if c.Name() == command {
-			c.Enable()
+			m.EnabledCommands[command] = true
 			return nil
 		}
 	}
@@ -39,7 +48,7 @@ func (m *Module) EnableCommand(command string) error {
 func (m *Module) DisableCommand(command string) error {
 	for _, c := range m.Commands {
 		if c.Name() == command {
-			c.Disable()
+			m.EnabledCommands[command] = false
 			return nil
 		}
 	}
@@ -50,14 +59,8 @@ func (m *Module) DisableCommand(command string) error {
 type Command interface {
 	// Cooldown of the command.
 	Cooldown() time.Duration
-	// Enables the command.
-	Enable()
-	// Determines if the command is currently enabled.
-	Enabled() bool
 	// Executes the command.
 	Execute(b *Bot, args []string, channel string, user twitch.User, message twitch.Message)
-	// Disables the command.
-	Disable()
 	// Determines if the command is currently on cooldown.
 	IsOnCooldown() bool
 	// Checks whether the given args will trigger the command.
