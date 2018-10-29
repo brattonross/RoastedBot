@@ -189,6 +189,7 @@ func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.
 		for _, m := range ch.Modules {
 			enabled, ok := ch.EnabledModules[m.Name]
 			if !ok || !enabled {
+				log.WithField("module", m.Name).Info("module is not enabled")
 				continue
 			}
 

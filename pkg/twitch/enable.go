@@ -98,3 +98,8 @@ func (e Enable) Execute(b *Bot, args []string, channel string, user twitch.User,
 	}
 	b.Say(channel, fmt.Sprintf("Disabled command '%s' in module '%s'", command, module))
 }
+
+// Match checks if the command should execute.
+func (e Enable) Match(s string) bool {
+	return strings.ToLower(s) == "enable" || strings.ToLower(s) == "disable"
+}

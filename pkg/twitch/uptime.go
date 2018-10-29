@@ -18,9 +18,9 @@ func (u Uptime) Execute(b *Bot, args []string, channel string, user twitch.User,
 	resp := fmt.Sprintf(
 		"%s has been running for %d hours, %d minutes, and %d seconds",
 		b.config.Username,
-		int(uptime.Hours()),
-		int(uptime.Minutes())%60,
-		int(uptime.Seconds())%60,
+		uptime/time.Hour,
+		uptime/time.Minute%60,
+		uptime/time.Second%60,
 	)
 	days := int(uptime.Hours() / 24)
 	if days > 0 {
@@ -28,9 +28,9 @@ func (u Uptime) Execute(b *Bot, args []string, channel string, user twitch.User,
 			"%s has been running for %d days, %d hours, %d minutes, and %d seconds",
 			b.config.Username,
 			days,
-			int(uptime.Hours())%24,
-			int(uptime.Minutes())%60,
-			int(uptime.Seconds())%60,
+			uptime/time.Hour%24,
+			uptime/time.Minute%60,
+			uptime/time.Second%60,
 		)
 	}
 	b.Say(channel, resp)

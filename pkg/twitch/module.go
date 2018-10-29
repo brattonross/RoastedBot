@@ -72,7 +72,6 @@ type Command interface {
 }
 
 type command struct {
-	enabled  bool
 	cooldown time.Duration
 	lastUsed time.Time
 	name     string
@@ -80,18 +79,6 @@ type command struct {
 
 func (c *command) Cooldown() time.Duration {
 	return c.cooldown
-}
-
-func (c *command) Enable() {
-	c.enabled = true
-}
-
-func (c command) Enabled() bool {
-	return c.enabled
-}
-
-func (c *command) Disable() {
-	c.enabled = false
 }
 
 func (c command) IsOnCooldown() bool {

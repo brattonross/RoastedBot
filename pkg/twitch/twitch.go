@@ -88,8 +88,16 @@ func (ch *Channel) initDefaultModules() error {
 	if err != nil {
 		return err
 	}
-	m.AddCommand(Help{&command{cooldown: time.Second * 5, enabled: true, name: "help"}})
-	m.AddCommand(Uptime{&command{cooldown: time.Second * 5, enabled: true, name: "uptime"}})
+
+	m.AddCommand(Help{&command{cooldown: time.Second * 5, name: "help"}})
+	m.EnableCommand("help")
+
+	m.AddCommand(Uptime{&command{cooldown: time.Second * 2, name: "uptime"}})
+	m.EnableCommand("uptime")
+
+	m.AddCommand(Enable{&command{cooldown: time.Second * 1, name: "enable"}})
+	m.EnableCommand("enable")
+
 	ch.EnabledModules[defaultModule] = true
 	return nil
 }
