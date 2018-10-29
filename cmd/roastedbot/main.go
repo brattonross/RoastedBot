@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
-
-	"github.com/brattonross/roastedbot/pkg/twitch"
+	"net"
+	
+	"github.com/brattonross/roastedbot/twitch"
+	tgrpc "github.com/brattonross/roastedbot/twitch/service/grpc"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -16,6 +19,7 @@ func main() {
 
 	log.Infof("using config path %s", *configPath)
 
+	// Read config
 	b, err := ioutil.ReadFile(*configPath)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -23,7 +27,6 @@ func main() {
 			"error":      err,
 		}).Fatal("failed to read configuration file")
 	}
-
 	config := twitch.Config{}
 	err = json.Unmarshal(b, &config)
 	if err != nil {
@@ -33,8 +36,22 @@ func main() {
 	}
 	log.Info("successfully read config")
 
+	// Initialise bot
 	bot := twitch.NewBot(config)
 	bot.Init()
+
+	// gRPC server setup
+	server := grpc.NewServer()
+	service := tgrpc.NewService(bot)
+	tgrpc.RegisterBotServiceServer(server, service)
+	l, err := net.Listen("tcp", ":1234")
+	if err != nil {
+		log.Fatalf("failed to listen on port 1234: %v", err)
+	}
+	go func() {
+		log.Info("roastedbot gRPC server is listening on port 1234")
+		log.Error(server.Serve(l))
+	}()
 
 	err = bot.Connect()
 	if err != nil {

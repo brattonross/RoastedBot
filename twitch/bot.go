@@ -159,8 +159,8 @@ func onNewMessage(b *Bot) func(channel string, user twitch.User, message twitch.
 			b.Say(channel, "xD")
 			return
 		} else if first == "!bot" {
-			log.WithFields(log.Fields{"channel": channel}).Info("sending bot Message")
-			b.Say(channel, "I'm roastedb's bot, written in Go pajaH")
+			// log.WithFields(log.Fields{"channel": channel}).Info("sending bot Message")
+			// b.Say(channel, "I'm roastedb's bot, written in Go pajaH")
 			return
 		} else if first == "!php" {
 			log.WithFields(log.Fields{"channel": channel}).Info("sending php Message")

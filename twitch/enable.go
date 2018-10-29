@@ -54,6 +54,9 @@ func (e Enable) Execute(b *Bot, args []string, channel string, user twitch.User,
 		b.Say(channel, invalidSyntax)
 		return
 	}
+	if strings.ToLower(module) == "default" {
+		return
+	}
 
 	// No command specified - enable/disable module.
 	if command == "" {

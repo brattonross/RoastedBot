@@ -10,16 +10,31 @@ message Command {
 
 message Module {
     string name = 1;
-    bool enabled = 2;
-    repeated Command commands = 3;
+    map<string, Command> commands = 2;
+    map<string, bool> enabled_commands = 3;
 }
 
-message ModulesRequest {}
+message ModulesRequest {
+    string channel = 1;
+}
 
 message ModulesResponse {
     map<string, Module> modules = 1;
 }
 
+message Channel {
+    string name = 1;
+    //map<string, Module> modules = 2;
+    map<string, bool> enabled_modules = 3;
+}
+
+message ChannelsRequest {}
+
+message ChannelsResponse {
+    map<string, Channel> channels = 1;
+}
+
 service BotService {
+    rpc Channels (ChannelsRequest) returns (ChannelsResponse);
     rpc Modules (ModulesRequest) returns (ModulesResponse);
 }
