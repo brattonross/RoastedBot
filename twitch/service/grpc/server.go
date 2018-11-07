@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	pb "github.com/brattonross/roastedbot/proto"
 	"github.com/brattonross/roastedbot/twitch"
 	context "golang.org/x/net/context"
 )
@@ -16,19 +17,19 @@ func NewService(b *twitch.Bot) *Service {
 }
 
 // Channels should return a list of all channels.
-func (s *Service) Channels(ctx context.Context, req *ChannelsRequest) (*ChannelsResponse, error) {
-	chans := map[string]*Channel{}
-	for _, c := range s.bot.Channels {
-		chans[c.Name] = &Channel{
-			Name:           c.Name,
-			EnabledModules: c.EnabledModules,
+func (s *Service) Channels(ctx context.Context, req *pb.ChannelsRequest) (*pb.ChannelsResponse, error) {
+	chans := map[string]*pb.Channel{}
+	for _, c := range s.bot.Channels() {
+		chans[c.Name] = &pb.Channel{
+			Name: c.Name,
+			//EnabledModules: c.EnabledModules(),
 			//Modules:        map[string]*Module{},
 		}
 	}
-	return &ChannelsResponse{chans}, nil
+	return &pb.ChannelsResponse{Channels: chans}, nil
 }
 
 // Modules should return a list of all modules.
-func (s *Service) Modules(ctx context.Context, req *ModulesRequest) (*ModulesResponse, error) {
-	return &ModulesResponse{}, nil
+func (s *Service) Modules(ctx context.Context, req *pb.ModulesRequest) (*pb.ModulesResponse, error) {
+	return &pb.ModulesResponse{}, nil
 }

@@ -12,7 +12,7 @@
 *.out
 
 # Bot configuration
-config.json
+*config.json
 
 # VSCode stuff
 .vscode

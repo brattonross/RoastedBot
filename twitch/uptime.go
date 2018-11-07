@@ -7,13 +7,15 @@ import (
 	twitch "github.com/gempir/go-twitch-irc"
 )
 
-// Uptime command.
-type Uptime struct {
-	*command
+var uptimeCommand = &Command{
+	Cooldown: time.Second * 2,
+	Name:     "uptime",
+	Run:      executeUptime,
+	Use:      "uptime",
 }
 
 // Execute the command.
-func (u Uptime) Execute(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) {
+func executeUptime(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) {
 	uptime := time.Since(b.start)
 	resp := fmt.Sprintf(
 		"%s has been running for %d hours, %d minutes, and %d seconds",

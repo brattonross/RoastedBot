@@ -3,19 +3,20 @@ package twitch
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	twitch "github.com/gempir/go-twitch-irc"
 	log "github.com/sirupsen/logrus"
 )
 
-// Enable allows modules and commands to be enabled and disabled by users.
-// TODO: Some kind of authentication probably needs to be in place in the future.
-type Enable struct {
-	*command
+var enableCommand = &Command{
+	Cooldown: time.Second * 1,
+	Name:     "enable",
+	Run:      executeEnable,
+	Use:      "enable",
 }
 
-// Execute the command.
-func (e Enable) Execute(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) {
+func executeEnable(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) {
 	if strings.ToLower(user.Username) != "roastedb" {
 		return
 	}
@@ -100,9 +101,4 @@ func (e Enable) Execute(b *Bot, args []string, channel string, user twitch.User,
 		return
 	}
 	b.Say(channel, fmt.Sprintf("Disabled command '%s' in module '%s'", command, module))
-}
-
-// Match checks if the command should execute.
-func (e Enable) Match(s string) bool {
-	return strings.ToLower(s) == "enable" || strings.ToLower(s) == "disable"
 }
