@@ -20,62 +20,66 @@ type Config struct {
 }
 
 // Controller is the application controller.
-// The bot and it's API are managed within the controller.
 type Controller struct {
-	bot    *twitch.Bot
-	config *Config
+	Client *twitch.Client
+	Config *Config
+
 	log    *log.Logger
 }
 
 // NewController creates a new bot controller.
 func NewController(config *Config, log *log.Logger) *Controller {
-	client := tirc.NewClient(config.Username, config.OAuth)
-	// Initialise bot
+	irc := tirc.NewClient(config.Username, config.OAuth)
 	// TODO: DB driver
-	bot := twitch.NewBot(config.Username, client)
-	bot.OnConnect(func() {
+	client := twitch.NewClient(config.Username, irc)
+	client.OnConnect(func() {
 		log.Info("connected to twitch")
 	})
+
 	return &Controller{
-		bot:    bot,
-		config: config,
-		log:    log,
+		client,
+		config,
+		log,
 	}
 }
 
-// StartBot joins any channels that the bot is configured
-// to connect to, and then connects to twitch.
-func (c *Controller) StartBot() error {
+// Connect joins any channels that the bot is configured
+// to join, and then connects to twitch.
+func (c *Controller) Connect() error {
 	defer func() {
 		c.log.Debug("disconnecting from twitch...")
-		if err := c.bot.Disconnect(); err != nil {
+		if err := c.Client.Disconnect(); err != nil {
 			c.log.Errorf("failed to disconnect elegantly from twitch: %v", err)
 		}
 	}()
 
 	c.loadChannels()
-	c.bot.JoinChannels()
-
-	for _, channel := range c.bot.Channels() {
+	for _, channel := range c.Client.Channels() {
 		c.addRequiredModules(channel.Name)
 	}
+	c.Client.JoinChannels()
 
-	c.bot.OnNewMessage(c.onNewMessage)
+	c.Client.OnNewMessage(c.onNewMessage)
 
-	return c.bot.Connect()
+	return c.Client.Connect()
+}
+
+// Disconnect will disconnect the client from twitch.
+func (c *Controller) Disconnect() error {
+	return c.Client.Disconnect()
 }
 
 func (c *Controller) addRequiredModules(channel string) {
-	adminModule, err := c.bot.AddModule(channel, "admin")
+	adminModule, err := c.Client.AddModule(channel, "admin")
 	if err != nil {
 		c.log.Errorf("failed to add admin module: %v", err)
 	} else {
 		adminModule.AddCommand(admin.EnableCommand)
 		adminModule.EnableCommand(admin.EnableCommand.Name)
-		c.bot.EnableModule(channel, "admin")
+		c.Client.EnableModule(channel, "admin")
 	}
 
-	general, err := c.bot.AddModule(channel, "general")
+	general, err := c.Client.AddModule(channel, "general")
 	if err != nil {
 		c.log.Errorf("failed to add general module: %v", err)
 	} else {
@@ -85,26 +89,26 @@ func (c *Controller) addRequiredModules(channel string) {
 		general.AddCommand(twitch.UptimeCommand)
 		general.EnableCommand(twitch.UptimeCommand.Name)
 
-		c.bot.EnableModule(channel, "general")
+		c.Client.EnableModule(channel, "general")
 	}
 }
 
 // LoadChannels loads the channels that the bot should join on start.
 func (c *Controller) loadChannels() {
-	for _, ch := range c.config.Channels {
-		if err := c.bot.AddChannel(ch); err != nil {
+	for _, ch := range c.Config.Channels {
+		if err := c.Client.AddChannel(ch); err != nil {
 			c.log.Errorf("failed to load channel: %v", err)
 		}
 	}
 }
 
 func (c *Controller) onNewMessage(channel string, user tirc.User, message tirc.Message) {
-	username := strings.ToLower(c.bot.Username)
+	username := strings.ToLower(c.Client.Username)
 	if strings.ToLower(user.Username) == username {
 		return
 	}
 
-	ch, err := c.bot.Channel(channel)
+	ch, err := c.Client.Channel(channel)
 	if err != nil {
 		log.WithField("channel", channel).Error("cannot handle message: channel is not configured")
 		return
@@ -119,27 +123,27 @@ func (c *Controller) onNewMessage(channel string, user tirc.User, message tirc.M
 	last := strings.ToLower(args[len(args)-1])
 
 	if first == "!xd" {
-		c.bot.Say(channel, "xD")
+		c.Client.Say(channel, "xD")
 		return
 	} else if first == "!php" {
-		c.bot.Say(channel, "PHPDETECTED")
+		c.Client.Say(channel, "PHPDETECTED")
 		return
 	}
 
 	// No mentions, don't process
-	if !isMention(first, c.bot.Username) && !isMention(last, c.bot.Username) {
+	if !isMention(first, c.Client.Username) && !isMention(last, c.Client.Username) {
 		return
 	}
 
 	// Only message is a mention of the bot, say hi
 	if len(args) == 1 {
-		c.bot.Say(channel, fmt.Sprintf("hi %s :)", user.DisplayName))
+		c.Client.Say(channel, fmt.Sprintf("hi %s :)", user.DisplayName))
 		return
 	}
 
-	if isMention(first, c.bot.Username) {
+	if isMention(first, c.Client.Username) {
 		args = args[1:]
-	} else if isMention(last, c.bot.Username) {
+	} else if isMention(last, c.Client.Username) {
 		args = args[:len(args)-1]
 	}
 
@@ -190,7 +194,7 @@ func (c *Controller) onNewMessage(channel string, user tirc.User, message tirc.M
 			"user":    user.DisplayName,
 		}).Info("finished executing command")
 
-		command.Execute(c.bot, args, channel, user, message)
+		command.Execute(c.Client, args, channel, user, message)
 		command.LastUsed = time.Now()
 	}()
 }

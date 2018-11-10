@@ -16,11 +16,11 @@ var UptimeCommand = &Command{
 }
 
 // Execute the command.
-func executeUptime(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) {
-	uptime := time.Since(b.start)
+func executeUptime(cl *Client, args []string, channel string, user twitch.User, message twitch.Message) {
+	uptime := time.Since(cl.start)
 	resp := fmt.Sprintf(
 		"%s has been running for %d hours, %d minutes, and %d seconds",
-		b.Username,
+		cl.Username,
 		uptime/time.Hour,
 		uptime/time.Minute%60,
 		uptime/time.Second%60,
@@ -29,12 +29,12 @@ func executeUptime(b *Bot, args []string, channel string, user twitch.User, mess
 	if days > 0 {
 		resp = fmt.Sprintf(
 			"%s has been running for %d days, %d hours, %d minutes, and %d seconds",
-			b.Username,
+			cl.Username,
 			days,
 			uptime/time.Hour%24,
 			uptime/time.Minute%60,
 			uptime/time.Second%60,
 		)
 	}
-	b.Say(channel, resp)
+	cl.Say(channel, resp)
 }

@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// EnableCommand allows modules and commands to be enabled.
 var EnableCommand = &twitch.Command{
 	Cooldown: time.Second * 1,
 	Name:     "enable",
@@ -17,7 +18,7 @@ var EnableCommand = &twitch.Command{
 	Use:      "enable",
 }
 
-func executeEnable(b *twitch.Bot, args []string, channel string, user tirc.User, message tirc.Message) {
+func executeEnable(cl *twitch.Client, args []string, channel string, user tirc.User, message tirc.Message) {
 	if strings.ToLower(user.Username) != "roastedb" {
 		return
 	}
@@ -25,14 +26,14 @@ func executeEnable(b *twitch.Bot, args []string, channel string, user tirc.User,
 	invalidSyntax := "Invalid command syntax. Usage: enable|disable -m module_name [-c command_name]"
 
 	if len(args) < 3 {
-		b.Say(channel, invalidSyntax)
+		cl.Say(channel, invalidSyntax)
 		return
 	}
 
 	enable := false
 	first := strings.ToLower(args[0])
 	if first != "enable" && first != "disable" {
-		b.Say(channel, invalidSyntax)
+		cl.Say(channel, invalidSyntax)
 		return
 	}
 	if first == "enable" {
@@ -53,7 +54,7 @@ func executeEnable(b *twitch.Bot, args []string, channel string, user tirc.User,
 	}
 
 	if module == "" {
-		b.Say(channel, invalidSyntax)
+		cl.Say(channel, invalidSyntax)
 		return
 	}
 	if strings.ToLower(module) == "default" {
@@ -63,43 +64,43 @@ func executeEnable(b *twitch.Bot, args []string, channel string, user tirc.User,
 	// No command specified - enable/disable module.
 	if command == "" {
 		if enable {
-			if err := b.EnableModule(channel, module); err != nil {
+			if err := cl.EnableModule(channel, module); err != nil {
 				log.WithField("module", module).Error(err)
-				b.Say(channel, fmt.Sprintf("Module '%s' does not exist", module))
+				cl.Say(channel, fmt.Sprintf("Module '%s' does not exist", module))
 				return
 			}
-			b.Say(channel, fmt.Sprintf("Enabled module '%s'", module))
+			cl.Say(channel, fmt.Sprintf("Enabled module '%s'", module))
 			return
 		}
-		if err := b.DisableModule(channel, module); err != nil {
+		if err := cl.DisableModule(channel, module); err != nil {
 			log.WithField("module", module).Error(err)
-			b.Say(channel, fmt.Sprintf("Module '%s' does not exist", module))
+			cl.Say(channel, fmt.Sprintf("Module '%s' does not exist", module))
 			return
 		}
-		b.Say(channel, fmt.Sprintf("Disabled module '%s'", module))
+		cl.Say(channel, fmt.Sprintf("Disabled module '%s'", module))
 		return
 	}
 
 	// Command specified - enable/disable command.
 	if enable {
-		if err := b.EnableCommand(channel, module, command); err != nil {
+		if err := cl.EnableCommand(channel, module, command); err != nil {
 			log.WithFields(log.Fields{
 				module:  module,
 				command: command,
 			}).Error(err)
-			b.Say(channel, fmt.Sprintf("Command '%s' does not exist in module '%s'", command, module))
+			cl.Say(channel, fmt.Sprintf("Command '%s' does not exist in module '%s'", command, module))
 			return
 		}
-		b.Say(channel, fmt.Sprintf("Enabled command '%s' in module '%s'", command, module))
+		cl.Say(channel, fmt.Sprintf("Enabled command '%s' in module '%s'", command, module))
 		return
 	}
-	if err := b.DisableCommand(channel, module, command); err != nil {
+	if err := cl.DisableCommand(channel, module, command); err != nil {
 		log.WithFields(log.Fields{
 			module:  module,
 			command: command,
 		}).Error(err)
-		b.Say(channel, fmt.Sprintf("Command '%s' does not exist in module '%s'", command, module))
+		cl.Say(channel, fmt.Sprintf("Command '%s' does not exist in module '%s'", command, module))
 		return
 	}
-	b.Say(channel, fmt.Sprintf("Disabled command '%s' in module '%s'", command, module))
+	cl.Say(channel, fmt.Sprintf("Disabled command '%s' in module '%s'", command, module))
 }

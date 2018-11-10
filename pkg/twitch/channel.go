@@ -11,7 +11,7 @@ type Channel struct {
 	modulesMutex   *sync.Mutex
 	modules        map[string]*Module
 
-	Name string
+	Name string `json:"name"`
 }
 
 func newChannel(name string) *Channel {

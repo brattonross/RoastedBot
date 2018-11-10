@@ -16,8 +16,8 @@ var HelpCommand = &Command{
 }
 
 // Execute the command.
-func executeHelp(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) {
-	b.Say(
+func executeHelp(cl *Client, args []string, channel string, user twitch.User, message twitch.Message) {
+	cl.Say(
 		channel,
 		fmt.Sprintf("%s, to use my commands, mention me at the start or end of your message.", user.DisplayName),
 	)
