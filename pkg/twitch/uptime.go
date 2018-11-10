@@ -7,7 +7,8 @@ import (
 	twitch "github.com/gempir/go-twitch-irc"
 )
 
-var uptimeCommand = &Command{
+// UptimeCommand prints the bot's uptime.
+var UptimeCommand = &Command{
 	Cooldown: time.Second * 2,
 	Name:     "uptime",
 	Run:      executeUptime,
@@ -19,7 +20,7 @@ func executeUptime(b *Bot, args []string, channel string, user twitch.User, mess
 	uptime := time.Since(b.start)
 	resp := fmt.Sprintf(
 		"%s has been running for %d hours, %d minutes, and %d seconds",
-		b.config.Username,
+		b.Username,
 		uptime/time.Hour,
 		uptime/time.Minute%60,
 		uptime/time.Second%60,
@@ -28,7 +29,7 @@ func executeUptime(b *Bot, args []string, channel string, user twitch.User, mess
 	if days > 0 {
 		resp = fmt.Sprintf(
 			"%s has been running for %d days, %d hours, %d minutes, and %d seconds",
-			b.config.Username,
+			b.Username,
 			days,
 			uptime/time.Hour%24,
 			uptime/time.Minute%60,

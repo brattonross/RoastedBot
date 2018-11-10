@@ -7,7 +7,8 @@ import (
 	twitch "github.com/gempir/go-twitch-irc"
 )
 
-var helpCommand = &Command{
+// HelpCommand prints help for the bot.
+var HelpCommand = &Command{
 	Cooldown: time.Second * 5,
 	Name:     "help",
 	Run:      executeHelp,

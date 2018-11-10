@@ -21,10 +21,4 @@ func TestNewChannel(t *testing.T) {
 	if c.modules == nil {
 		t.Error("expected modules to not be nil")
 	}
-	if c.modules[defaultModule] == nil {
-		t.Error("expected channel to have the default module")
-	}
-	if !c.enabledModules[defaultModule] {
-		t.Error("expected channel to have the default module enabled")
-	}
 }

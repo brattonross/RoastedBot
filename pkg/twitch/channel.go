@@ -14,8 +14,6 @@ type Channel struct {
 	Name string
 }
 
-const defaultModule = "default"
-
 func newChannel(name string) *Channel {
 	ch := &Channel{
 		enabledModules: make(map[string]bool),
@@ -23,8 +21,6 @@ func newChannel(name string) *Channel {
 		modules:        make(map[string]*Module),
 		Name:           name,
 	}
-
-	ch.addDefaultModule()
 
 	return ch
 }
@@ -36,22 +32,6 @@ func (ch *Channel) AddCommand(module string, c *Command) error {
 		ch.modules[module] = newModule(module)
 	}
 	return ch.modules[module].AddCommand(c)
-}
-
-func (ch *Channel) addDefaultModule() {
-	m, _ := ch.AddModule(defaultModule)
-
-	m.AddCommand(helpCommand)
-	m.EnableCommand(helpCommand.Name)
-
-	m.AddCommand(uptimeCommand)
-	m.EnableCommand(uptimeCommand.Name)
-
-	m.AddCommand(enableCommand)
-	m.EnableCommand(enableCommand.Name)
-
-	// Default module should always be enabled.
-	ch.EnableModule(defaultModule)
 }
 
 // AddModule adds a new module to the channel.
@@ -116,7 +96,7 @@ func (ch *Channel) isModuleEnabled(module string) bool {
 
 // MatchCommand returns the Command that is triggered by the given args,
 // as well as the module that it belongs to.
-func (ch *Channel) matchCommand(args []string) (command *Command, module *Module) {
+func (ch *Channel) MatchCommand(args []string) (command *Command, module *Module) {
 	for _, m := range ch.modules {
 		if !ch.isModuleEnabled(m.Name) {
 			continue

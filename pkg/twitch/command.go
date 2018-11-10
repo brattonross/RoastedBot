@@ -21,8 +21,8 @@ type Command struct {
 	Use string
 }
 
-// Executes the command.
-func (c *Command) execute(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) error {
+// Execute the command.
+func (c *Command) Execute(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) error {
 	if c == nil {
 		return fmt.Errorf("attempted to execute a nil Command")
 	}
@@ -33,7 +33,8 @@ func (c *Command) execute(b *Bot, args []string, channel string, user twitch.Use
 	return nil
 }
 
-func (c Command) isOnCooldown() bool {
+// IsOnCooldown determines if the command is on cooldown.
+func (c Command) IsOnCooldown() bool {
 	return time.Now().Add(-c.Cooldown).Before(c.LastUsed)
 }
 

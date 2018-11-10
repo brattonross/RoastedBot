@@ -65,7 +65,7 @@ func (m *Module) DisableCommand(command string) error {
 }
 
 // IsCommandEnabled determines if a command is enabled.
-func (m *Module) isCommandEnabled(command string) bool {
+func (m *Module) IsCommandEnabled(command string) bool {
 	enabled, ok := m.enabledCommands[command]
 	return ok && enabled
 }

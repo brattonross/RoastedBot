@@ -1,22 +1,23 @@
-package twitch
+package admin
 
 import (
 	"fmt"
 	"strings"
 	"time"
 
-	twitch "github.com/gempir/go-twitch-irc"
+	"github.com/brattonross/roastedbot/pkg/twitch"
+	tirc "github.com/gempir/go-twitch-irc"
 	log "github.com/sirupsen/logrus"
 )
 
-var enableCommand = &Command{
+var EnableCommand = &twitch.Command{
 	Cooldown: time.Second * 1,
 	Name:     "enable",
 	Run:      executeEnable,
 	Use:      "enable",
 }
 
-func executeEnable(b *Bot, args []string, channel string, user twitch.User, message twitch.Message) {
+func executeEnable(b *twitch.Bot, args []string, channel string, user tirc.User, message tirc.Message) {
 	if strings.ToLower(user.Username) != "roastedb" {
 		return
 	}
