@@ -12,9 +12,10 @@ import (
 type Client struct {
 	*twitch.Client
 
-	start         time.Time
-	channelsMutex *sync.Mutex
 	channels      map[string]*Channel
+	channelsMutex *sync.Mutex
+	rateLimit     <-chan time.Time
+	start         time.Time
 
 	Username string
 }
@@ -25,24 +26,25 @@ func NewClient(username string, client *twitch.Client) *Client {
 		channelsMutex: &sync.Mutex{},
 		channels:      make(map[string]*Channel),
 		Client:        client,
+		rateLimit:     time.Tick(time.Millisecond * 1500),
 		start:         time.Now(),
 		Username:      username,
 	}
 }
 
 // AddChannel adds a channel to the Client, but does not join it.
-func (b *Client) AddChannel(name string) error {
-	return b.addChannel(newChannel(name))
+func (cl *Client) AddChannel(name string) error {
+	return cl.addChannel(newChannel(name))
 }
 
-func (b *Client) addChannel(c *Channel) error {
-	if _, ok := b.channels[c.Name]; ok {
-		return fmt.Errorf("Client already contains channel with name '%s'", c.Name)
+func (cl *Client) addChannel(ch *Channel) error {
+	if _, ok := cl.channels[ch.Name]; ok {
+		return fmt.Errorf("Client already contains channel with name '%s'", ch.Name)
 	}
-	b.channelsMutex.Lock()
-	defer b.channelsMutex.Unlock()
+	cl.channelsMutex.Lock()
+	defer cl.channelsMutex.Unlock()
 
-	b.channels[c.Name] = c
+	cl.channels[ch.Name] = ch
 
 	return nil
 }
@@ -50,8 +52,8 @@ func (b *Client) addChannel(c *Channel) error {
 // AddCommand adds a command to the module in the channel.
 // If the Client is not currently connected to the channel it will return an error.
 // If the module does not already exist, it will be created.
-func (b *Client) AddCommand(channel, module string, c *Command) error {
-	ch, ok := b.channels[channel]
+func (cl *Client) AddCommand(channel, module string, c *Command) error {
+	ch, ok := cl.channels[channel]
 	if !ok {
 		return fmt.Errorf("Client is not connected to channel '%s'", channel)
 	}
@@ -60,8 +62,8 @@ func (b *Client) AddCommand(channel, module string, c *Command) error {
 }
 
 // AddModule adds a new module with the given name to the given channel.
-func (b *Client) AddModule(channel, module string) (*Module, error) {
-	ch, ok := b.channels[channel]
+func (cl *Client) AddModule(channel, module string) (*Module, error) {
+	ch, ok := cl.channels[channel]
 	if !ok {
 		return nil, fmt.Errorf("channel '%s' is not configured", channel)
 	}
@@ -74,8 +76,8 @@ func (b *Client) AddModule(channel, module string) (*Module, error) {
 
 // Channel gets the channel with the given name if the Client
 // has it configured, otherwise it returns an error.
-func (b *Client) Channel(name string) (*Channel, error) {
-	ch, ok := b.channels[name]
+func (cl *Client) Channel(name string) (*Channel, error) {
+	ch, ok := cl.channels[name]
 	if !ok {
 		return nil, fmt.Errorf("channel %s is not configured", name)
 	}
@@ -83,9 +85,9 @@ func (b *Client) Channel(name string) (*Channel, error) {
 }
 
 // Channels returns the channels that the Client is currently connected to.
-func (b *Client) Channels() []Channel {
+func (cl *Client) Channels() []Channel {
 	chans := []Channel{}
-	for _, c := range b.channels {
+	for _, c := range cl.channels {
 		chans = append(chans, *c)
 	}
 	return chans
@@ -93,8 +95,8 @@ func (b *Client) Channels() []Channel {
 
 // EnableCommand enables a command in the given channel and module.
 // The Client must be connected to the given channel, and the command must exist within the module.
-func (b *Client) EnableCommand(channel, module, command string) error {
-	ch, ok := b.channels[channel]
+func (cl *Client) EnableCommand(channel, module, command string) error {
+	ch, ok := cl.channels[channel]
 	if !ok {
 		return fmt.Errorf("Client is not connected to channel '%s'", channel)
 	}
@@ -102,8 +104,8 @@ func (b *Client) EnableCommand(channel, module, command string) error {
 }
 
 // EnableModule enables a module in the given channel.
-func (b *Client) EnableModule(channel, module string) error {
-	ch, ok := b.channels[channel]
+func (cl *Client) EnableModule(channel, module string) error {
+	ch, ok := cl.channels[channel]
 	if !ok {
 		return fmt.Errorf("Client is not connected to channel '%s'", channel)
 	}
@@ -111,8 +113,8 @@ func (b *Client) EnableModule(channel, module string) error {
 }
 
 // DisableCommand disables a command in the given channel and module.
-func (b *Client) DisableCommand(channel, module, command string) error {
-	ch, ok := b.channels[channel]
+func (cl *Client) DisableCommand(channel, module, command string) error {
+	ch, ok := cl.channels[channel]
 	if !ok {
 		return fmt.Errorf("Client is not connected to channel '%s'", channel)
 	}
@@ -120,8 +122,8 @@ func (b *Client) DisableCommand(channel, module, command string) error {
 }
 
 // DisableModule disables a module in a channel.
-func (b *Client) DisableModule(channel, module string) error {
-	ch, ok := b.channels[channel]
+func (cl *Client) DisableModule(channel, module string) error {
+	ch, ok := cl.channels[channel]
 	if !ok {
 		return fmt.Errorf("Client is not connected to channel '%s'", channel)
 	}
@@ -129,8 +131,15 @@ func (b *Client) DisableModule(channel, module string) error {
 }
 
 // JoinChannels joins all of the channels in the Client's channel list.
-func (b *Client) JoinChannels() {
-	for _, c := range b.channels {
-		b.Join(c.Name)
+func (cl *Client) JoinChannels() {
+	for _, c := range cl.channels {
+		cl.Join(c.Name)
 	}
+}
+
+// Say will send a message to twitch irc.
+// Messages are limited to sending as per the rate limit.
+func (cl *Client) Say(channel, text string) {
+	<-cl.rateLimit
+	cl.Client.Say(channel, text)
 }
