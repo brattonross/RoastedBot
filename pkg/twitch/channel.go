@@ -7,27 +7,29 @@ import (
 
 // Channel represents a twitch channel.
 type Channel struct {
-	enabledModules map[string]bool
-	modulesMutex   *sync.Mutex
-	modules        map[string]*Module
+	enabledModules      map[string]bool
+	enabledModulesMutex *sync.Mutex
+	modules             map[string]*Module
+	modulesMutex        *sync.Mutex
 
 	Name string `json:"name"`
 }
 
 func newChannel(name string) *Channel {
-	ch := &Channel{
-		enabledModules: make(map[string]bool),
-		modulesMutex:   &sync.Mutex{},
-		modules:        make(map[string]*Module),
-		Name:           name,
+	return &Channel{
+		enabledModules:      make(map[string]bool),
+		enabledModulesMutex: &sync.Mutex{},
+		modules:             make(map[string]*Module),
+		modulesMutex:        &sync.Mutex{},
+		Name:                name,
 	}
-
-	return ch
 }
 
 // AddCommand adds a command to the given module.
 // If the module does not exist, it will be created.
 func (ch *Channel) AddCommand(module string, c *Command) error {
+	ch.modulesMutex.Lock()
+	defer ch.modulesMutex.Unlock()
 	if _, ok := ch.modules[module]; !ok {
 		ch.modules[module] = newModule(module)
 	}
@@ -36,6 +38,8 @@ func (ch *Channel) AddCommand(module string, c *Command) error {
 
 // AddModule adds a new module to the channel.
 func (ch *Channel) AddModule(name string) (*Module, error) {
+	ch.modulesMutex.Lock()
+	defer ch.modulesMutex.Unlock()
 	if _, ok := ch.modules[name]; ok {
 		return nil, fmt.Errorf("module '%s' already exists in channel '%s'", name, ch.Name)
 	}
@@ -45,6 +49,8 @@ func (ch *Channel) AddModule(name string) (*Module, error) {
 
 // EnableCommand enables a command in the given module.
 func (ch *Channel) EnableCommand(module, command string) error {
+	ch.modulesMutex.Lock()
+	defer ch.modulesMutex.Unlock()
 	m, ok := ch.modules[module]
 	if !ok {
 		return fmt.Errorf("module with name '%s' does not exist in channel '%s'", module, ch.Name)
@@ -54,6 +60,8 @@ func (ch *Channel) EnableCommand(module, command string) error {
 
 // EnableModule enables a module in the channel.
 func (ch *Channel) EnableModule(module string) error {
+	ch.enabledModulesMutex.Lock()
+	defer ch.enabledModulesMutex.Unlock()
 	if _, ok := ch.modules[module]; !ok {
 		return fmt.Errorf("module with name '%s' does not exist in channel '%s'", module, ch.Name)
 	}
@@ -72,6 +80,8 @@ func (ch *Channel) EnabledModules() []string {
 
 // DisableCommand disables a command in the given module.
 func (ch *Channel) DisableCommand(module, command string) error {
+	ch.modulesMutex.Lock()
+	defer ch.modulesMutex.Unlock()
 	m, ok := ch.modules[module]
 	if !ok {
 		return fmt.Errorf("module with name '%s' does not exist in channel '%s'", module, ch.Name)
@@ -81,6 +91,8 @@ func (ch *Channel) DisableCommand(module, command string) error {
 
 // DisableModule disables a module in the channel.
 func (ch *Channel) DisableModule(module string) error {
+	ch.enabledModulesMutex.Lock()
+	defer ch.enabledModulesMutex.Unlock()
 	if _, ok := ch.modules[module]; !ok {
 		return fmt.Errorf("module with name '%s' does not exist in channel '%s'", module, ch.Name)
 	}
@@ -90,6 +102,8 @@ func (ch *Channel) DisableModule(module string) error {
 
 // IsModuleEnabled determines if the module is enabled.
 func (ch *Channel) isModuleEnabled(module string) bool {
+	ch.enabledModulesMutex.Lock()
+	defer ch.enabledModulesMutex.Unlock()
 	enabled, ok := ch.enabledModules[module]
 	return ok && enabled
 }
